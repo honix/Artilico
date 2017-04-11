@@ -114,12 +114,12 @@
     (when (eq key :key-left-ctrl) (setf ctrl nil)))
 
   (defmethod glut:keyboard ((w artilico-window) key x y)
-    (if (and ctrl (eq key #\Return))
+    (if (and ctrl (or (eq key #\Return) (eq key #\Newline)))
 	(code-evaluate (code w))
 	(code-keyboard (code w) key))))
 
 (defmethod glut:motion ((w artilico-window) x y)
-  (format t "~d ~d~%" x y))
+  ())
 
 (defmethod glut:reshape ((w artilico-window) width height)
   (setf (glut:width w) width

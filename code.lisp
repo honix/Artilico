@@ -200,11 +200,13 @@
        (loop
 	  for x to (1- (length str))
 	  as char = (aref str x) do
-	    (if (char= char #\Tab)
-		(glut:bitmap-string
-		 glut:+bitmap-8-by-13+ "    ")
-		(glut:bitmap-character
-		 glut:+bitmap-8-by-13+ (char-code char))))
+	    (cond
+	      ((char= char #\Return) ())
+	      ((char= char #\Tab)
+	       (glut:bitmap-string
+		glut:+bitmap-8-by-13+ "    "))
+	      (t (glut:bitmap-character
+		  glut:+bitmap-8-by-13+ (char-code char)))))
        (gl:raster-pos -0.9 (decf line gap)))))
 
 (defmethod code-draw-buffer ((c code))
