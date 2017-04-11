@@ -7,7 +7,7 @@ Artistic live-coding in Common Lisp. Why artistic? Oh..
 This thing inspired by [fluxus](https://en.wikipedia.org/wiki/Fluxus_(programming_environment)). It gently catch your mistakes and let you fly with wings of Lisp. No more stupid crashes. Baa..
 
 ## Make it fly
-To make it fly you need newest [SBCL](http://www.sbcl.org/platform-table.html) and [quicklisp](https://www.quicklisp.org/beta/) installed. ```freeglut``` library can be installed with Linux package manager, on Windows ```freeglut.dll``` will putted with SBCL binaries. Artilico works good on Linux. On Windows it seems to little weak.
+To make it fly you need newest [SBCL](http://www.sbcl.org/platform-table.html) and [quicklisp](https://www.quicklisp.org/beta/) installed. ```freeglut``` library can be installed with Linux package manager, on Windows ```freeglut.dll``` will putted with SBCL binaries. Artilico works good on Linux. On Windows it seems to be little weak.
 
 Then just
 
