@@ -48,7 +48,6 @@
   (setf (code-update-timer c) (trivial-timers:make-timer
 			       (lambda () (setf (code-update? c) t))))
   (reset-timer (code-update-timer c))
-  (code-gen-framebuffer c)
   (code-evaluate c))
 
 ;;
