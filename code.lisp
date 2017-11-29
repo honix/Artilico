@@ -5,14 +5,15 @@
 ;;
 
 (defparameter *init-code*
-  "(defun draw ()
-    (gl:enable :lighting :light0)
-    (gl:light :light0 :position '(0 1 1 0))
-    (gl:translate 0 0 -3)
-    (gl:rotate (art-time *window*) 1 1 1)
-    (loop for i from 1 to 10 do
-        (gl:rotate (* (art-time *window*) i 0.3) 1 1 0)
-        (glut:wire-sphere (/ 12 i) 6 6)))")
+  #("(defun draw ()"
+    "    (gl:translate 0 0 -2)"
+    "    (gl:rotate (art-time *window*) 1 1 1)"
+    "    (let* ((time (art-time *window*))"
+    "           (pulse (sin (* time 0.1))))"
+    "        (loop for i from 1 to 20 do"
+    "            (gl:color (/ i 20) 0 pulse)"
+    "            (gl:rotate (* time i 0.2) 1.0 0.7 0.3)"
+    "            (glut:wire-sphere (+ (/ 5 i) pulse) 12 12))))"))
 
 (defparameter *code-carret-pixels*
   (make-array (* 6 9 4)
@@ -23,8 +24,7 @@
 (defclass code ()
   (;; logic
    (code-strings :accessor code-strings
-                 :initform (split-by (copy-seq *init-code*)
-                                     #\Newline))
+                 :initform *init-code*)
    (code-carret-x :accessor code-carret-x
                   :initform 0)
    (code-carret-y :accessor code-carret-y
@@ -50,6 +50,7 @@
   (setf (code-update-timer c) (trivial-timers:make-timer
                                (lambda () (setf (code-update? c) t))))
   (reset-timer (code-update-timer c))
+  (eval '(in-package :artilico))
   (code-evaluate c))
 
 ;;
