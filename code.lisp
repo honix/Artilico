@@ -1,3 +1,4 @@
+(in-package :artilico)
 
 ;;
 ;; Artilico | code
@@ -15,38 +16,39 @@
 
 (defparameter *code-carret-pixels*
   (make-array (* 6 9 4)
-	      :element-type 'unsigned-byte
-	      :initial-contents (loop for i below (* 6 9) append
-				     `(255 200 100 ,(random 255)))))
+              :element-type 'unsigned-byte
+              :initial-contents (loop for i below (* 6 9) append
+                                     `(255 200 100 ,(random 255)))))
 
 (defclass code ()
   (;; logic
    (code-strings :accessor code-strings
-		 :initform (split-by (copy-seq *init-code*)
-				     #\Newline))
+                 :initform (split-by (copy-seq *init-code*)
+                                     #\Newline))
    (code-carret-x :accessor code-carret-x
-		  :initform 0)
+                  :initform 0)
    (code-carret-y :accessor code-carret-y
-		  :initform 0)
+                  :initform 0)
    (code-answer :accessor code-answer
-		:initform nil)
+                :initform nil)
    (code-answer-shift :accessor code-answer-shift
-		      :initform 0)
+                      :initform 0)
    ;; timing
    (code-update-timer :accessor code-update-timer)
    (code-update? :accessor code-update?
-		 :initform nil)
+                 :initform nil)
    ;; graphics
    (code-frame-buffer :accessor code-frame-buffer
-		      :initform nil)
+                      :initform nil)
    (code-texture :accessor code-texture
-		 :initform nil)
+                 :initform nil)
    (code-texture-res :accessor code-texture-res
-		     :initform 512)))
+                     :initform 512)))
 
 (defmethod initialize-instance :after ((c code) &rest initargs)
+  (declare (ignore initargs))
   (setf (code-update-timer c) (trivial-timers:make-timer
-			       (lambda () (setf (code-update? c) t))))
+                               (lambda () (setf (code-update? c) t))))
   (reset-timer (code-update-timer c))
   (code-evaluate c))
 
@@ -56,70 +58,70 @@
 
 (defmethod code-newline ((c code))
   (with-slots (code-strings (x code-carret-x)
-			    (y code-carret-y)) c
+                            (y code-carret-y)) c
     (let* ((str (aref code-strings y))
-	   (left (subseq str 0 x))
-	   (right (subseq str x)))
+           (left (subseq str 0 x))
+           (right (subseq str x)))
       (incf y)
       (setf x 0
-	    (aref code-strings (1- y)) left
-	    code-strings (insert-after code-strings 'vector
-				       y (list right))))))
+            (aref code-strings (1- y)) left
+            code-strings (insert-after code-strings 'vector
+                                       y (list right))))))
 
 (defmethod code-insert ((c code) char)
   (with-slots (code-strings (x code-carret-x)
-			    (y code-carret-y)) c
+                            (y code-carret-y)) c
     (symbol-macrolet ((str (aref code-strings y)))
       (setf str (insert-after str 'string x (string char)))
       (incf x))))
 
 (defmethod code-backspace ((c code))
   (with-slots (code-strings (x code-carret-x)
-			    (y code-carret-y)) c
+                            (y code-carret-y)) c
     (if (> x 0)
-	(symbol-macrolet ((str (aref code-strings y)))
-	  (decf x)
-	  (setf str (remove-nth str 'string x)))
-	(when (> y 0)
-	  (macrolet ((c-s (s) `(aref (code-strings c) (+ y ,s))))
-	    (decf y)
-	    (setf x (length (c-s 0))
-		  (c-s 0) (concatenate 'string (c-s 0) (c-s 1))
-		  code-strings (remove-nth
-				code-strings 'vector (1+ y))))))))
+        (symbol-macrolet ((str (aref code-strings y)))
+          (decf x)
+          (setf str (remove-nth str 'string x)))
+        (when (> y 0)
+          (macrolet ((c-s (s) `(aref (code-strings c) (+ y ,s))))
+            (decf y)
+            (setf x (length (c-s 0))
+                  (c-s 0) (concatenate 'string (c-s 0) (c-s 1))
+                  code-strings (remove-nth
+                                code-strings 'vector (1+ y))))))))
 
 (defmethod code-delete ((c code))
   (with-slots (code-strings (x code-carret-x)
-			    (y code-carret-y)) c
+                            (y code-carret-y)) c
     (symbol-macrolet ((str (aref code-strings y)))
       (if (< y (length str))
-	  (setf str (concatenate 'string
-				 (subseq str 0 x)
-				 (subseq str (1+ x))))
-	  (progn (setf x 0)
-		 (incf y)
-		 (code-backspace c))))))
+          (setf str (concatenate 'string
+                                 (subseq str 0 x)
+                                 (subseq str (1+ x))))
+          (progn (setf x 0)
+                 (incf y)
+                 (code-backspace c))))))
 
 (defmethod code-evaluate ((c code))
   (set-answer
    c
    (princ-to-string
     (handler-case (eval (read-from-string
-			 (reduce (lambda (x y)
-				   (concatenate 'string x y))
-				 (code-strings c))))
+                         (reduce (lambda (x y)
+                                   (concatenate 'string x y))
+                                 (code-strings c))))
       (error (er) (code-answer c) er)))))
 
 (defmethod set-answer ((c code) answ)
   (setf (code-answer c)	answ
-	(code-answer-shift c) (gap-by-pixels
-			       c
-			       (* (count #\Newline answ) 13)))
+        (code-answer-shift c) (gap-by-pixels
+                               c
+                               (* (count #\Newline answ) 13)))
   (reset-timer (code-update-timer c)))
 
 (defun reset-timer (timer)
   (trivial-timers:schedule-timer timer
-				 0 :repeat-interval 1))
+                                 0 :repeat-interval 1))
 
 (defmethod code-keyboard ((c code) key)
   (case key
@@ -132,19 +134,19 @@
 
 (defmethod code-special ((c code) key)
   (with-slots (code-strings (x code-carret-x)
-			    (y code-carret-y)
-			    code-update-timer) c
+                            (y code-carret-y)
+                            code-update-timer) c
     (case key
       (:key-home (setf x 0))
       (:key-end (setf x (length (aref code-strings y))))
       (:key-left (setf x (max 0 (1- x))))
       (:key-right (setf x (min (1+ x) (length (aref code-strings y)))))
       (:key-up (setf y (max 0 (1- y)))
-	       (setf x (min x (length (aref code-strings y)))))
+               (setf x (min x (length (aref code-strings y)))))
       (:key-down (if (< y (1- (length code-strings)))
-		     (incf y)
-		     (setf x (length (aref code-strings y))))
-		 (setf x (min x (length (aref code-strings y))))))
+                     (incf y)
+                     (setf x (length (aref code-strings y))))
+                 (setf x (min x (length (aref code-strings y))))))
     (reset-timer code-update-timer)))
 
 ;;
@@ -162,22 +164,22 @@
   (when (code-texture c)
     (gl:delete-textures (list (code-texture c))))
   (let ((fb (first (gl:gen-framebuffers-ext 1)))
-	(tx (first (gl:gen-textures 1))))
+        (tx (first (gl:gen-textures 1))))
     (gl:bind-framebuffer-ext :framebuffer-ext fb)
     (gl:bind-texture :texture-2d tx)
     (gl:tex-parameter :texture-2d :texture-min-filter :nearest)
     (gl:tex-parameter :texture-2d :texture-mag-filter :nearest)
     (gl:tex-image-2d :texture-2d 0 :rgba
-		     (code-texture-res c) (code-texture-res c) 0 :rgba
-		     :unsigned-byte (cffi:null-pointer))
+                     (code-texture-res c) (code-texture-res c) 0 :rgba
+                     :unsigned-byte (cffi:null-pointer))
     (gl:bind-texture :texture-2d 0)
     (gl:framebuffer-texture-2d-ext :framebuffer-ext
-				   :color-attachment0-ext
-				   :texture-2d
-				   tx
-				   0)
+                                   :color-attachment0-ext
+                                   :texture-2d
+                                   tx
+                                   0)
     (setf (code-frame-buffer c) fb
-	  (code-texture c) tx)))
+          (code-texture c) tx)))
 
 (defmethod gap-by-pixels ((c code) pixels)
   (* (/ pixels (code-texture-res c)) 2))
@@ -185,33 +187,32 @@
 (defmethod draw-carret ((c code) row line)
   (with-slots ((x code-carret-x) (y code-carret-y)) c
     (gl:raster-pos (+ row (gap-by-pixels c (* x 8)))
-		   (+ line (gap-by-pixels c (* y -13))))
+                   (+ line (gap-by-pixels c (* y -13))))
     (gl:draw-pixels 6 9 :rgba :unsigned-byte
-		    *code-carret-pixels*)))
+                    *code-carret-pixels*)))
 
 (defmethod draw-chars ((c code) row line gap)
   (with-slots ((strs code-strings)
-	       (cx code-carret-x)
-	       (yy code-carret-y)) c
-  (gl:raster-pos row line)
-  (loop
-     for y to (1- (length strs))
-     as str = (aref strs y) do
-       (loop
-	  for x to (1- (length str))
-	  as char = (aref str x) do
-	    (cond
-	      ((char= char #\Return) ())
-	      ((char= char #\Tab)
-	       (glut:bitmap-string
-		glut:+bitmap-8-by-13+ "    "))
-	      (t (glut:bitmap-character
-		  glut:+bitmap-8-by-13+ (char-code char)))))
-       (gl:raster-pos -0.9 (decf line gap)))))
+               (cx code-carret-x)
+               (yy code-carret-y)) c
+    (gl:raster-pos row line)
+    (loop
+       for y to (1- (length strs))
+       as str = (aref strs y) do
+         (loop
+            for x to (1- (length str))
+            as char = (aref str x) do
+              (cond
+                ((char= char #\Return) ())
+                ((char= char #\Tab)
+                 (bitmap-str glut:+bitmap-8-by-13+ "    "))
+                (t (glut:bitmap-character
+                    glut:+bitmap-8-by-13+ (char-code char)))))
+         (gl:raster-pos -0.9 (decf line gap)))))
 
 (defmethod code-draw-buffer ((c code))
   (with-slots (code-strings (x code-carret-x)
-			    (y code-carret-y)) c
+                            (y code-carret-y)) c
     ;; setup
     (gl:bind-framebuffer-ext :framebuffer-ext (code-frame-buffer c))
     (gl:disable :blend :texture-2d)
@@ -227,30 +228,37 @@
     ;; status line
     (gl:color 0.5 0.5 1)
     (gl:raster-pos -0.9 (+ -0.95 (code-answer-shift c)))
-    (glut:bitmap-string glut:+bitmap-8-by-13+ (code-answer c))
+    (bitmap-str glut:+bitmap-8-by-13+ (code-answer c))
     ;; fps
     (gl:color 1 1 1 0.5)
     (gl:raster-pos 0.7 -0.95)
-    (glut:bitmap-string glut:+bitmap-8-by-13+ (format nil "fps: ~d"
-					       (fps *window*)))
+    (bitmap-str glut:+bitmap-8-by-13+ (format nil "fps: ~d"
+                                              (fps *window*)))
     (gl:color 1 1 1)
     (let ((row -0.9)
-	  (line 0.8)
-	  (gap (gap-by-pixels c 13)))
+          (line 0.8)
+          (gap (gap-by-pixels c 13)))
       (draw-carret c row line)
       (draw-chars c row line gap))))
 
+(defun bitmap-str (font str)
+  #-darwin
+  (glut:bitmap-string font str)
+  #+darwin
+  (loop :for c :across str :do
+     (glut:bitmap-character font (char-code c))))
+
 (defmethod code-draw ((c code))
   (labels ((draw-quad ()
-	     (gl:with-primitive :quads
-	       (gl:tex-coord 0 0)
-	       (gl:vertex -1.0 -1.0)
-	       (gl:tex-coord 1 0)
-	       (gl:vertex 1.0 -1.0)
-	       (gl:tex-coord 1 1)
-	       (gl:vertex 1.0 1.0)
-	       (gl:tex-coord 0 1)
-	       (gl:vertex -1.0 1.0))))
+             (gl:with-primitive :quads
+               (gl:tex-coord 0 0)
+               (gl:vertex -1.0 -1.0)
+               (gl:tex-coord 1 0)
+               (gl:vertex 1.0 -1.0)
+               (gl:tex-coord 1 1)
+               (gl:vertex 1.0 1.0)
+               (gl:tex-coord 0 1)
+               (gl:vertex -1.0 1.0))))
     (gl:disable :depth-test :lighting)
     (gl:enable :blend :texture-2d)
     (gl:blend-func :src-alpha :one-minus-src-alpha)
