@@ -1,3 +1,4 @@
+(in-package :cffi)
 
 ;;
 ;; Artilico | cffi-fix
@@ -5,7 +6,6 @@
 
 ;;; redefinition to not spam thise warnings
 
-(in-package :cffi)
 (defun parse-deprecated-struct-type (name struct-or-union)
   (check-type struct-or-union (member :struct :union))
   (let* ((struct-type-name `(,struct-or-union ,name))

@@ -1,3 +1,4 @@
+(in-package :artilico)
 
 ;;
 ;; Artilico | artilico-window
@@ -7,23 +8,13 @@
 ;; gpu buffer and shadows are in plans
 ;; but little later.
 
-(ql:quickload '(:swank :trivial-timers
-		:cl-opengl :cl-glut)) ; :cl-glu
-
-(load "cffi-fix.lisp")
-(load "utils.lisp")
-(load "code.lisp")
-
-(in-package :cl-user)
-
-;(defparameter *count* 65534)
-;(defparameter *count* 4000)
+;;(defparameter *count* 65534)
+;;(defparameter *count* 4000)
 (defparameter *window* nil)
 
 ;; (gl:define-gl-array-format position-color
 ;;   (gl:vertex :type :float :components (x y z))
 ;;   (gl:color :type :unsigned-char :components (r g b)))
-
 
 (defclass artilico-window (glut:window)
   (;; time
@@ -40,11 +31,11 @@
    ;; (shadow-texture :accessor shadow-texture)
    ;; code
    (code :accessor code
-	 :initform (make-instance 'code)))
-  
+         :initform (make-instance 'code)))
+
   (:default-initargs :width 512 :height 512 :pos-x 100 :pos-y 100
                      :mode '(:double :depth :rgb :multisample)
-		     :tick-interval 15 :title "artilico"))
+                     :tick-interval 15 :title "artilico"))
 
 ;;
 ;; timing
@@ -101,7 +92,7 @@
   ;; 				 :texture-2d
   ;; 				 (shadow-texture w) 0)
 
-  
+
   ;;(load-gpu-arrays w)
   )
 
@@ -115,8 +106,8 @@
 
   (defmethod glut:keyboard ((w artilico-window) key x y)
     (if (and ctrl (or (eq key #\Return) (eq key #\Newline)))
-	(code-evaluate (code w))
-	(code-keyboard (code w) key))))
+        (code-evaluate (code w))
+        (code-keyboard (code w) key))))
 
 (defmethod glut:motion ((w artilico-window) x y)
   ())
@@ -124,13 +115,13 @@
 (defmethod glut:reshape ((w artilico-window) width height)
   (setf (glut:width w) width
         (glut:height w) height
-	(code-texture-res (code w)) (+ (mod width 2)
-				       (mod height 2)
-				       (/ height 1)))
+        (code-texture-res (code w)) (+ (mod width 2)
+                                       (mod height 2)
+                                       (/ height 1)))
   (code-gen-framebuffer (code w))
   (reset-timer (code-update-timer (code w)))
   (gl:bind-framebuffer-ext :framebuffer-ext 0)
-  ; turn clear off for videocard shit at resizing
+  ;; turn clear off for videocard shit at resizing
   (gl:clear :color-buffer :depth-buffer)
   (gl:viewport 0 0 width height)
   (gl:matrix-mode :projection)
@@ -166,7 +157,7 @@
 (defun draw ())		; user function
 
 (defun draw-graphics (w)
-  (gl:enable :depth-test)  
+  (gl:enable :depth-test)
   (gl:disable :texture-2d)
   (gl:clear-color 0 0 0 1)
   (gl:color 0.5 0.5 0.5)
@@ -178,7 +169,7 @@
 
   ;; (gl:translate 0.5 0 -3)
   ;; (gl:rotate (art-time w) 1 1 1)
-  
+
   ;; (gl:enable-client-state :vertex-array)
   ;; (gl:enable-client-state :color-array)
   ;; (gl:bind-gl-vertex-array (vertex-array w))
@@ -198,10 +189,10 @@
   (update-times w)
 
   (code-update (code w))
-  
+
   (setup-draw-graphics w)
   (draw-graphics w)
-  
+
   (code-draw (code w)))
 
 (defmethod glut:tick ((w artilico-window))
@@ -212,6 +203,10 @@
 ;; gogogo
 ;; this thing doesnt runs on windows with slime-session
 
-(sb-thread:make-thread
- (lambda () (glut:display-window (setf *window* (make-instance 'artilico-window))))
- :name "gl-thread")
+(defun gogogo ()
+  (sb-thread:make-thread
+   (lambda () (glut:display-window (setf *window* (make-instance 'artilico-window))))
+   :name "gl-thread"))
+
+(defun run-no-thread ()
+  (glut:display-window (setf *window* (make-instance 'artilico-window))))
