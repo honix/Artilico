@@ -106,10 +106,11 @@
   (set-answer
    c
    (princ-to-string
-    (handler-case (eval (read-from-string
-                         (reduce (lambda (x y)
-                                   (concatenate 'string x y))
-                                 (code-strings c))))
+    (handler-case (let ((*package* (find-package :artilico)))
+                    (eval (read-from-string
+                           (reduce (lambda (x y)
+                                     (concatenate 'string x y))
+                                   (code-strings c)))))
       (error (er) (code-answer c) er)))))
 
 (defmethod set-answer ((c code) answ)
