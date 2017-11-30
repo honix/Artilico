@@ -12,8 +12,10 @@
    (fps :accessor fps :initform 0)
    ;; code
    (code :accessor code
-         :initform (make-instance 'code)))
-
+         :initform (make-instance 'code))
+   ;; graphics
+   (aspect-ratio :accessor aspect-ratio
+		 :initform 1.0))
   (:default-initargs :width 512 :height 512 :pos-x 100 :pos-y 100
                      :mode '(:double :depth :rgb :multisample)
                      :tick-interval 15 :title "artilico"))
@@ -54,10 +56,15 @@
   (defmethod glut:keyboard ((w artilico-window) key x y)
     (if (and ctrl (or (eq key #\Return) (eq key #\Newline)))
         (code-evaluate (code w))
-        (code-keyboard (code w) key))))
+        (code-keyboard (code w) key)))
 
-(defmethod glut:motion ((w artilico-window) x y)
-  ())
+  (defmethod glut:mouse ((w artilico-window) button
+			 state x y)
+    (code-mouse (code w) button state x y))
+
+  (defmethod glut:motion ((w artilico-window) x y)
+    ;(write (list x y))
+    ))
 
 (defmethod glut:reshape ((w artilico-window) width height)
   (setf (glut:width w) width
@@ -65,6 +72,7 @@
         (code-texture-res (code w)) (+ (mod width 2)
                                        (mod height 2)
                                        (/ height 1)))
+  (setf (aspect-ratio w) (/ width height))
   (code-gen-framebuffer (code w))
   (reset-timer (code-update-timer (code w)))
   (gl:bind-framebuffer-ext :framebuffer-ext 0)

@@ -5,12 +5,13 @@
 ;;
 
 (defparameter *init-code*
-  #("(defun draw ()"
+  #(""
+    "(defun draw ()"
     "    (gl:translate 0 0 -2)"
     "    (gl:rotate (art-time *window*) 1 1 1)"
     "    (let* ((time (art-time *window*))"
     "           (pulse (sin (* time 0.1))))"
-    "        (loop for i from 1 to 20 do"
+    "        (loop for i from 1 to 10 do"
     "            (gl:color (/ i 20) 0 pulse)"
     "            (gl:rotate (* time i 0.2) 1.0 0.7 0.3)"
     "            (glut:wire-sphere (+ (/ 5 i) pulse) 12 12))))"))
@@ -124,6 +125,20 @@
   (trivial-timers:schedule-timer timer
                                  0 :repeat-interval 1))
 
+(defmethod code-mouse ((c code) button state x y)
+  (with-slots (code-strings
+	       code-carret-x code-carret-y
+	       code-update-timer) c
+    (let* ((c-x (floor (/ x 8)))
+	   (c-y (floor (/ y 13)))
+	   (char-y
+	    (max 0 (min c-y (1- (length code-strings)))))
+	   (char-x
+	    (max 0 (min c-x (length (aref code-strings char-y))))))
+      (setf code-carret-x char-x
+	    code-carret-y char-y)
+      (reset-timer code-update-timer))))
+
 (defmethod code-keyboard ((c code) key)
   (case key
     (#\Return (code-newline c))
@@ -138,16 +153,22 @@
                             (y code-carret-y)
                             code-update-timer) c
     (case key
-      (:key-home (setf x 0))
-      (:key-end (setf x (length (aref code-strings y))))
-      (:key-left (setf x (max 0 (1- x))))
-      (:key-right (setf x (min (1+ x) (length (aref code-strings y)))))
-      (:key-up (setf y (max 0 (1- y)))
-               (setf x (min x (length (aref code-strings y)))))
-      (:key-down (if (< y (1- (length code-strings)))
-                     (incf y)
-                     (setf x (length (aref code-strings y))))
-                 (setf x (min x (length (aref code-strings y))))))
+      (:key-home
+       (setf x 0))
+      (:key-end
+       (setf x (length (aref code-strings y))))
+      (:key-left
+       (setf x (max 0 (1- x))))
+      (:key-right
+       (setf x (min (1+ x) (length (aref code-strings y)))))
+      (:key-up
+       (setf y (max 0 (1- y)))
+       (setf x (min x (length (aref code-strings y)))))
+      (:key-down
+       (if (< y (1- (length code-strings)))
+	   (incf y)
+	   (setf x (length (aref code-strings y))))
+       (setf x (min x (length (aref code-strings y))))))
     (reset-timer code-update-timer)))
 
 ;;
@@ -205,11 +226,9 @@
             as char = (aref str x) do
               (cond
                 ((char= char #\Return) ())
-                ((char= char #\Tab)
-                 (bitmap-str glut:+bitmap-8-by-13+ "    "))
                 (t (glut:bitmap-character
                     glut:+bitmap-8-by-13+ (char-code char)))))
-         (gl:raster-pos -0.9 (decf line gap)))))
+         (gl:raster-pos -1 (decf line gap)))))
 
 (defmethod code-draw-buffer ((c code))
   (with-slots (code-strings (x code-carret-x)
@@ -236,8 +255,8 @@
     (bitmap-str glut:+bitmap-8-by-13+ (format nil "fps: ~d"
                                               (fps *window*)))
     (gl:color 1 1 1)
-    (let ((row -0.9)
-          (line 0.8)
+    (let ((row -1)
+          (line (- 1 (gap-by-pixels c 13)))
           (gap (gap-by-pixels c 13)))
       (draw-carret c row line)
       (draw-chars c row line gap))))
@@ -265,7 +284,7 @@
     (gl:blend-func :src-alpha :one-minus-src-alpha)
     (gl:bind-texture :texture-2d (code-texture c))
     (gl:load-identity)
-    (gl:translate 0 0 -1)
+    (gl:translate (- 1 (aspect-ratio *window*)) 0 -1)
     (gl:color 0 0 0 0.9) ; text-shadow
     (draw-quad)
     (gl:translate 0 (gap-by-pixels c 1) 0)
