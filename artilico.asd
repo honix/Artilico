@@ -2,8 +2,8 @@
 
 (asdf:defsystem #:artilico
   :description "Artistic live-coding in Common Lisp"
-  :author "Honix <techsnuffle@gmail.com>"
-  :license "Unknown"
+  :author "Honix <ted888@ya.ru>"
+  :license "cc nc"
   :serial t
   :depends-on (:swank
                :trivial-timers
