@@ -29,6 +29,7 @@ It is pretty similar to all you like text editors, except:
 ```ctrl + Enter``` Evaluate code
 
 ## TODO
--- Text select
--- Copy/Paste
--- Top-level forms in separate units / 2D pannable surface
+- Text select
+- Copy/Paste
+- Top-level forms in separate units / 2D pannable surface
+- Remove this todo section
