@@ -35,9 +35,8 @@
    (code-answer-shift :accessor code-answer-shift
                       :initform 0)
    ;; timing
-   (code-update-timer :accessor code-update-timer)
    (code-update? :accessor code-update?
-                 :initform nil)
+                 :initform t)
    ;; graphics
    (code-frame-buffer :accessor code-frame-buffer
                       :initform nil)
@@ -48,9 +47,6 @@
 
 (defmethod initialize-instance :after ((c code) &rest initargs)
   (declare (ignore initargs))
-  (setf (code-update-timer c) (trivial-timers:make-timer
-                               (lambda () (setf (code-update? c) t))))
-  (reset-timer (code-update-timer c))
   (eval '(in-package :artilico))
   (code-evaluate c))
 
@@ -119,16 +115,11 @@
         (code-answer-shift c) (gap-by-pixels
                                c
                                (* (count #\Newline answ) 13)))
-  (reset-timer (code-update-timer c)))
-
-(defun reset-timer (timer)
-  (trivial-timers:schedule-timer timer
-                                 0 :repeat-interval 1))
+  (setf (code-update? c) t))
 
 (defmethod code-mouse ((c code) button state x y)
   (with-slots (code-strings
-	       code-carret-x code-carret-y
-	       code-update-timer) c
+	       code-carret-x code-carret-y) c
     (let* ((c-x (floor (/ x 8)))
 	   (c-y (floor (/ y 13)))
 	   (char-y
@@ -137,7 +128,7 @@
 	    (max 0 (min c-x (length (aref code-strings char-y))))))
       (setf code-carret-x char-x
 	    code-carret-y char-y)
-      (reset-timer code-update-timer))))
+      (setf (code-update? c) t))))
 
 (defmethod code-keyboard ((c code) key)
   (case key
@@ -146,12 +137,11 @@
     (#\Rubout (code-delete c))
     (#\Tab (dotimes (i 4) (code-insert c " ")))
     (t (code-insert c key)))
-  (reset-timer (code-update-timer c)))
+  (setf (code-update? c) t))
 
 (defmethod code-special ((c code) key)
   (with-slots (code-strings (x code-carret-x)
-                            (y code-carret-y)
-                            code-update-timer) c
+                            (y code-carret-y)) c
     (case key
       (:key-home
        (setf x 0))
@@ -169,7 +159,7 @@
 	   (incf y)
 	   (setf x (length (aref code-strings y))))
        (setf x (min x (length (aref code-strings y))))))
-    (reset-timer code-update-timer)))
+    (setf (code-update? c) t)))
 
 ;;
 ;; graphics
@@ -241,7 +231,7 @@
     (gl:load-identity)
     (gl:ortho -1 1 -1 1 0 1)
     (gl:matrix-mode :modelview)
-    ;; draw
+    ;; reset
     (gl:clear-color 0 0 0 0)
     (gl:clear :color-buffer)
     (gl:load-identity)
@@ -249,11 +239,7 @@
     (gl:color 0.5 0.5 1)
     (gl:raster-pos -0.9 (+ -0.95 (code-answer-shift c)))
     (bitmap-str glut:+bitmap-8-by-13+ (code-answer c))
-    ;; fps
-    (gl:color 1 1 1 0.5)
-    (gl:raster-pos 0.7 -0.95)
-    (bitmap-str glut:+bitmap-8-by-13+ (format nil "fps: ~d"
-                                              (fps *window*)))
+    ;; code
     (gl:color 1 1 1)
     (let ((row -1)
           (line (- 1 (gap-by-pixels c 13)))

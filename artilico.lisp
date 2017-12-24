@@ -74,7 +74,6 @@
                                        (/ height 1)))
   (setf (aspect-ratio w) (/ width height))
   (code-gen-framebuffer (code w))
-  (reset-timer (code-update-timer (code w)))
   (gl:bind-framebuffer-ext :framebuffer-ext 0)
   ;; turn clear off for videocard shit at resizing
   (gl:clear :color-buffer :depth-buffer)
