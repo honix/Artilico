@@ -13,9 +13,9 @@ To make it fly you need newest [SBCL](http://www.sbcl.org/platform-table.html) a
 Then just
 
 ```
+cd ~/quicklisp/local-projects
 git clone https://github.com/honix/Artilico.git
-cd Artilico
-sbcl --load quick-start.lisp
+sbcl --load Artilico/quick-start.lisp
 
 ```
 

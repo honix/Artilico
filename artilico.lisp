@@ -4,35 +4,18 @@
 ;; Artilico | artilico-window
 ;;
 
-;; There is some commented blocks,
-;; gpu buffer and shadows are in plans
-;; but little later.
-
-;;(defparameter *count* 65534)
-;;(defparameter *count* 4000)
 (defparameter *window* nil)
-
-;; (gl:define-gl-array-format position-color
-;;   (gl:vertex :type :float :components (x y z))
-;;   (gl:color :type :unsigned-char :components (r g b)))
 
 (defclass artilico-window (glut:window)
   (;; time
    (art-time :accessor art-time :initform 0.0)
    (fps :accessor fps :initform 0)
-   ;; ;; gpu-arrays
-   ;; (vertex-array :accessor vertex-array
-   ;;               :initform (gl:alloc-gl-array
-   ;;                          'position-color *count*))
-   ;; (indices-array :accessor indices-array
-   ;;                :initform (gl:alloc-gl-array
-   ;;                           :unsigned-short (* *count* 2)))
-   ;; (shadow-buffer :accessor shadow-buffer)
-   ;; (shadow-texture :accessor shadow-texture)
    ;; code
    (code :accessor code
-         :initform (make-instance 'code)))
-
+         :initform (make-instance 'code))
+   ;; graphics
+   (aspect-ratio :accessor aspect-ratio
+		 :initform 1.0))
   (:default-initargs :width 512 :height 512 :pos-x 100 :pos-y 100
                      :mode '(:double :depth :rgb :multisample)
                      :tick-interval 15 :title "artilico"))
@@ -55,46 +38,12 @@
       (setf last-frame-time new-time)
       (incf temp-fps))))
 
-
-;; (defmethod load-gpu-arrays ((w artilico-window))
-;;   (dotimes (i *count*)
-;;     ;; verticesx
-;;     (setf (gl:glaref (vertex-array w) i 'x) (rand-from-to -1.0 1.0))
-;;     (setf (gl:glaref (vertex-array w) i 'y) (rand-from-to -1.0 1.0))
-;;     (setf (gl:glaref (vertex-array w) i 'z) (rand-from-to -1.0 1.0))
-;;     ;; indices
-;;     (setf (gl:glaref (indices-array w) (* 2 i)) i)
-;;     (setf (gl:glaref (indices-array w) (1+ (* 2 i))) (- *count* i))
-;;     ;; colors
-;;     (setf (gl:glaref (vertex-array w) i 'r) (floor (random 255)))
-;;     (setf (gl:glaref (vertex-array w) i 'g) (floor (random 255)))
-;;     (setf (gl:glaref (vertex-array w) i 'b) (floor (random 255)))
-;;     ;; (setf (gl:glaref (vertex-array w) i 'a) 255)
-;;     ))
-
-
 ;;
 ;; glut events
 ;;
 
 (defmethod glut:display-window :before ((w artilico-window))
-  (gl:clear-color 0 0 0 1)
-
-  ;; (setf (shadow-buffer w) (first (gl:gen-framebuffers-ext 1))
-  ;; 	(shadow-texture w) (first (gl:gen-textures 1)))
-  ;; (gl:bind-framebuffer-ext :framebuffer-ext (shadow-buffer w))
-  ;; (gl:bind-texture :texture-2d (shadow-texture w))
-  ;; (gl:tex-image-2d :texture-2d 0 :depth-component
-  ;; 		   512 512 0 :depth-component :unsigned-byte
-  ;; 		   (cffi:null-pointer))
-  ;; (gl:framebuffer-texture-2d-ext :framebuffer-ext
-  ;; 				 :depth-attachment-ext
-  ;; 				 :texture-2d
-  ;; 				 (shadow-texture w) 0)
-
-
-  ;;(load-gpu-arrays w)
-  )
+  (gl:clear-color 0 0 0 1))
 
 (let ((ctrl nil))
   (defmethod glut:special ((w artilico-window) key x y)
@@ -107,10 +56,15 @@
   (defmethod glut:keyboard ((w artilico-window) key x y)
     (if (and ctrl (or (eq key #\Return) (eq key #\Newline)))
         (code-evaluate (code w))
-        (code-keyboard (code w) key))))
+        (code-keyboard (code w) key)))
 
-(defmethod glut:motion ((w artilico-window) x y)
-  ())
+  (defmethod glut:mouse ((w artilico-window) button
+			 state x y)
+    (code-mouse (code w) button state x y))
+
+  (defmethod glut:motion ((w artilico-window) x y)
+    ;(write (list x y))
+    ))
 
 (defmethod glut:reshape ((w artilico-window) width height)
   (setf (glut:width w) width
@@ -118,6 +72,7 @@
         (code-texture-res (code w)) (+ (mod width 2)
                                        (mod height 2)
                                        (/ height 1)))
+  (setf (aspect-ratio w) (/ width height))
   (code-gen-framebuffer (code w))
   (reset-timer (code-update-timer (code w)))
   (gl:bind-framebuffer-ext :framebuffer-ext 0)
@@ -134,9 +89,7 @@
   (gl:load-identity))
 
 (defmethod glut:close ((w artilico-window))
-  ;; (gl:free-gl-array (vertex-array w))
-  ;; (gl:free-gl-array (indices-array w))
-  )
+  '())
 
 ;;
 ;; drawing
@@ -165,18 +118,7 @@
   (gl:load-identity)
 
   (handler-case (draw)
-    (error (er) (set-answer (code w) (princ-to-string er))))
-
-  ;; (gl:translate 0.5 0 -3)
-  ;; (gl:rotate (art-time w) 1 1 1)
-
-  ;; (gl:enable-client-state :vertex-array)
-  ;; (gl:enable-client-state :color-array)
-  ;; (gl:bind-gl-vertex-array (vertex-array w))
-  ;; (if (> (mod (art-time w) 60) 30)
-  ;; (gl:draw-elements :lines (indices-array w))
-  ;; (gl:draw-elements :triangles (indices-array w)))
-  )
+    (error (er) (set-answer (code w) (princ-to-string er)))))
 
 ;;
 ;;
