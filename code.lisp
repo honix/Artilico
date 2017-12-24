@@ -16,22 +16,30 @@
     "            (gl:rotate (* time i 0.2) 1.0 0.7 0.3)"
     "            (glut:wire-sphere (+ (/ 5 i) pulse) 12 12))))"))
 
+(defparameter *code-carret-width* 8)
+(defparameter *code-carret-height* 12)
+
 (defparameter *code-carret-pixels*
-  (make-array (* 6 9 4)
-              :element-type 'unsigned-byte
-              :initial-contents (loop for i below (* 6 9) append
-                                     `(255 200 100 ,(random 255)))))
+  (make-array (* *code-carret-width* *code-carret-height* 4)
+              :element-type
+              'unsigned-byte
+              :initial-contents
+              (loop for i below (* *code-carret-width*
+                                   *code-carret-height*)
+                 append `(255 200 100 170))))
 
 (defclass code ()
   (;; logic
-   (code-strings :accessor code-strings
-                 :initform *init-code*)
-   (code-carret-x :accessor code-carret-x
-                  :initform 0)
-   (code-carret-y :accessor code-carret-y
-                  :initform 0)
-   (code-answer :accessor code-answer
-                :initform nil)
+   (code-strings      :accessor code-strings
+                      :initform *init-code*)
+   (code-carret-x     :accessor code-carret-x
+                      :initform 0)
+   (code-carret-y     :accessor code-carret-y
+                      :initform 0)
+   (code-selection    :accessor code-selection
+                      :initform '((0 0) (0 0)))
+   (code-answer       :accessor code-answer
+                      :initform nil)
    (code-answer-shift :accessor code-answer-shift
                       :initform 0)
    ;; timing
@@ -40,10 +48,10 @@
    ;; graphics
    (code-frame-buffer :accessor code-frame-buffer
                       :initform nil)
-   (code-texture :accessor code-texture
-                 :initform nil)
-   (code-texture-res :accessor code-texture-res
-                     :initform 512)))
+   (code-texture      :accessor code-texture
+                      :initform nil)
+   (code-texture-res  :accessor code-texture-res
+                      :initform 512)))
 
 (defmethod initialize-instance :after ((c code) &rest initargs)
   (declare (ignore initargs))
@@ -117,9 +125,19 @@
                                (* (count #\Newline answ) 13)))
   (setf (code-update? c) t))
 
+(defmethod code-set-end-selection ((c code) char-x char-y)
+  (with-slots ((s code-selection)) c
+    (if (and (<= char-y (second (first s)))
+             (<= char-x (first (first s))))
+        (setf (first (first s)) char-x
+              (second (first s)) char-y)
+        (setf (first (second s)) char-x
+              (second (second s)) char-y))))
+
 (defmethod code-mouse ((c code) button state x y)
   (with-slots (code-strings
-	       code-carret-x code-carret-y) c
+	       code-carret-x code-carret-y
+               code-selection) c
     (let* ((c-x (floor (/ x 8)))
 	   (c-y (floor (/ y 13)))
 	   (char-y
@@ -128,6 +146,22 @@
 	    (max 0 (min c-x (length (aref code-strings char-y))))))
       (setf code-carret-x char-x
 	    code-carret-y char-y)
+      (cond ((eq state :down)
+             (setf (first code-selection) (list char-x char-y)
+                   (second code-selection) (list char-x char-y)))
+            ((or (eq state :up))
+             (code-set-end-selection c char-x char-y)))
+      (setf (code-update? c) t))))
+
+(defmethod code-drag ((c code) x y)
+  (with-slots (code-strings code-selection) c
+    (let* ((c-x (floor (/ x 8)))
+           (c-y (floor (/ y 13)))
+           (char-y
+            (max 0 (min c-y (1- (length code-strings)))))
+           (char-x
+            (max 0 (min c-x (length (aref code-strings char-y))))))
+      (code-set-end-selection c char-x char-y)
       (setf (code-update? c) t))))
 
 (defmethod code-keyboard ((c code) key)
@@ -196,24 +230,46 @@
 (defmethod gap-by-pixels ((c code) pixels)
   (* (/ pixels (code-texture-res c)) 2))
 
-(defmethod draw-carret ((c code) row line)
-  (with-slots ((x code-carret-x) (y code-carret-y)) c
-    (gl:raster-pos (+ row (gap-by-pixels c (* x 8)))
-                   (+ line (gap-by-pixels c (* y -13))))
-    (gl:draw-pixels 6 9 :rgba :unsigned-byte
-                    *code-carret-pixels*)))
+(defmethod draw-mark ((c code) row line x y)
+  (gl:raster-pos (+ row (gap-by-pixels c (* x 8)))
+                 (+ line (gap-by-pixels c (* y -13))))
+  (gl:draw-pixels *code-carret-width*
+                  *code-carret-height*
+                  :rgba :unsigned-byte
+                  *code-carret-pixels*))
+
+(defmethod draw-selection ((c code) row line gap)
+  (destructuring-bind ((start-x start-y) (end-x end-y))
+      (code-selection c)
+    (if (not (= start-y end-y))
+        (progn
+          (loop for x from start-x to 64 do
+               (draw-mark c row line x start-y))
+          (loop for y from (1+ start-y) to (1- end-y) do
+               (loop for x from 0 to 64 do
+                    (draw-mark c row line x y)))
+          (loop for x from 0 to end-x do
+               (draw-mark c row line x end-y)))
+        (progn
+          (loop for x from start-x to end-x do
+               (draw-mark c row line x start-y)))))
+
+  (defmethod draw-carret ((c code) row line)
+    (with-slots ((x code-carret-x) (y code-carret-y)) c
+      (gl:raster-pos (+ row (gap-by-pixels c (* x 8)))
+                     (+ line (gap-by-pixels c (* y -13))))
+      (gl:draw-pixels *code-carret-width*
+                      *code-carret-height*
+                      :rgba :unsigned-byte
+                      *code-carret-pixels*))))
 
 (defmethod draw-chars ((c code) row line gap)
   (with-slots ((strs code-strings)
                (cx code-carret-x)
                (yy code-carret-y)) c
     (gl:raster-pos row line)
-    (loop
-       for y to (1- (length strs))
-       as str = (aref strs y) do
-         (loop
-            for x to (1- (length str))
-            as char = (aref str x) do
+    (loop for str across strs do
+         (loop for char across str do
               (cond
                 ((char= char #\Return) ())
                 (t (glut:bitmap-character
@@ -244,6 +300,7 @@
     (let ((row -1)
           (line (- 1 (gap-by-pixels c 13)))
           (gap (gap-by-pixels c 13)))
+      (draw-selection c row line gap)
       (draw-carret c row line)
       (draw-chars c row line gap))))
 

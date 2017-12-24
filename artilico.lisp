@@ -45,7 +45,8 @@
 (defmethod glut:display-window :before ((w artilico-window))
   (gl:clear-color 0 0 0 1))
 
-(let ((ctrl nil))
+(let ((ctrl nil)
+      (mouse-drag nil))
   (defmethod glut:special ((w artilico-window) key x y)
     (when (eq key :key-left-ctrl) (setf ctrl t))
     (code-special (code w) key))
@@ -60,11 +61,12 @@
 
   (defmethod glut:mouse ((w artilico-window) button
 			 state x y)
+    (setf mouse-drag (eq state :down))
     (code-mouse (code w) button state x y))
 
   (defmethod glut:motion ((w artilico-window) x y)
-    ;(write (list x y))
-    ))
+    (when mouse-drag
+      (code-drag (code w) x y))))
 
 (defmethod glut:reshape ((w artilico-window) width height)
   (setf (glut:width w) width
@@ -75,7 +77,6 @@
   (setf (aspect-ratio w) (/ width height))
   (code-gen-framebuffer (code w))
   (gl:bind-framebuffer-ext :framebuffer-ext 0)
-  ;; turn clear off for videocard shit at resizing
   (gl:clear :color-buffer :depth-buffer)
   (gl:viewport 0 0 width height)
   (gl:matrix-mode :projection)
@@ -85,7 +86,8 @@
          (sized (* norma aspect)))
     (gl:frustum (- sized) sized (- norma) norma 0.1 100))
   (gl:matrix-mode :modelview)
-  (gl:load-identity))
+  (gl:load-identity)
+  (setf (code-update? (code w)) t))
 
 (defmethod glut:close ((w artilico-window))
   '())
