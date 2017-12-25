@@ -46,13 +46,16 @@
   (gl:clear-color 0 0 0 1))
 
 (let ((ctrl nil)
+      (shift nil)
       (mouse-drag nil))
   (defmethod glut:special ((w artilico-window) key x y)
-    (when (eq key :key-left-ctrl) (setf ctrl t))
-    (code-special (code w) key))
+    (cond ((eq key :key-left-ctrl) (setf ctrl t))
+	  ((eq key :key-left-shift) (setf shift t)))
+    (code-special (code w) shift key))
 
   (defmethod glut:special-up ((w artilico-window) key x y)
-    (when (eq key :key-left-ctrl) (setf ctrl nil)))
+    (cond ((eq key :key-left-ctrl) (setf ctrl nil))
+	  ((eq key :key-left-shift) (setf shift nil))))
 
   (defmethod glut:keyboard ((w artilico-window) key x y)
     (if (and ctrl (or (eq key #\Return) (eq key #\Newline)))

@@ -19,6 +19,15 @@
 (defparameter *code-carret-width* 8)
 (defparameter *code-carret-height* 12)
 
+(defparameter *code-selection-pixels*
+  (make-array (* *code-carret-width* *code-carret-height* 4)
+              :element-type
+              'unsigned-byte
+              :initial-contents
+              (loop for i below (* *code-carret-width*
+                                   *code-carret-height*)
+                 append `(100 200 255 170))))
+
 (defparameter *code-carret-pixels*
   (make-array (* *code-carret-width* *code-carret-height* 4)
               :element-type
@@ -166,9 +175,11 @@
     (t (code-insert c key)))
   (setf (code-update? c) t))
 
-(defmethod code-special ((c code) key)
-  (with-slots (code-strings (x code-carret-x)
-                            (y code-carret-y)) c
+(defmethod code-special ((c code) shift key)
+  (with-slots (code-strings
+	       (x code-carret-x)
+	       (y code-carret-y)
+	       code-selection) c
     (case key
       (:key-home
        (setf x 0))
@@ -186,6 +197,9 @@
 	   (incf y)
 	   (setf x (length (aref code-strings y))))
        (setf x (min x (length (aref code-strings y))))))
+    (if shift
+	(setf (second code-selection) (list x y))
+	(setf code-selection `((,x ,y) (,x ,y))))
     (setf (code-update? c) t)))
 
 ;;
@@ -229,12 +243,12 @@
   (gl:draw-pixels *code-carret-width*
                   *code-carret-height*
                   :rgba :unsigned-byte
-                  *code-carret-pixels*))
+		  *code-selection-pixels*))
 
 (defmethod normal-selection ((c code))
   (with-slots ((c code-selection)) c
-    (if (and (> (second (first c)) (second (second c)))
-	     (> (first (first c)) (first (second c))))
+    (if (or (> (second (first c)) (second (second c)))
+	    (> (first (first c)) (first (second c))))
 	(list (second c) (first c))
 	(list (first c) (second c)))))
 
@@ -252,16 +266,16 @@
                (draw-mark c row line x end-y)))
         (progn
           (loop for x from start-x to end-x do
-               (draw-mark c row line x start-y)))))
+               (draw-mark c row line x start-y))))))
 
-  (defmethod draw-carret ((c code) row line)
-    (with-slots ((x code-carret-x) (y code-carret-y)) c
-      (gl:raster-pos (+ row (gap-by-pixels c (* x 8)))
-                     (+ line (gap-by-pixels c (* y -13))))
-      (gl:draw-pixels *code-carret-width*
-                      *code-carret-height*
-                      :rgba :unsigned-byte
-                      *code-carret-pixels*))))
+(defmethod draw-carret ((c code) row line)
+  (with-slots ((x code-carret-x) (y code-carret-y)) c
+    (gl:raster-pos (+ row (gap-by-pixels c (* x 8)))
+		   (+ line (gap-by-pixels c (* y -13))))
+    (gl:draw-pixels *code-carret-width*
+		    *code-carret-height*
+		    :rgba :unsigned-byte
+		    *code-carret-pixels*)))
 
 (defmethod draw-chars ((c code) row line gap)
   (with-slots ((strs code-strings)
@@ -277,8 +291,10 @@
          (gl:raster-pos -1 (decf line gap)))))
 
 (defmethod code-draw-buffer ((c code))
-  (with-slots (code-strings (x code-carret-x)
-                            (y code-carret-y)) c
+  (with-slots (code-strings
+	       (x code-carret-x)
+	       (y code-carret-y)
+	       code-selection) c
     ;; setup
     (gl:bind-framebuffer-ext :framebuffer-ext (code-frame-buffer c))
     (gl:disable :blend :texture-2d)
@@ -300,7 +316,8 @@
     (let ((row -1)
           (line (- 1 (gap-by-pixels c 13)))
           (gap (gap-by-pixels c 13)))
-      (draw-selection c row line gap)
+      (if code-selection
+	  (draw-selection c row line gap))
       (draw-carret c row line)
       (draw-chars c row line gap))))
 
