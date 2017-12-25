@@ -125,15 +125,6 @@
                                (* (count #\Newline answ) 13)))
   (setf (code-update? c) t))
 
-(defmethod code-set-end-selection ((c code) char-x char-y)
-  (with-slots ((s code-selection)) c
-    (if (and (<= char-y (second (first s)))
-             (<= char-x (first (first s))))
-        (setf (first (first s)) char-x
-              (second (first s)) char-y)
-        (setf (first (second s)) char-x
-              (second (second s)) char-y))))
-
 (defmethod code-mouse ((c code) button state x y)
   (with-slots (code-strings
 	       code-carret-x code-carret-y
@@ -150,7 +141,8 @@
              (setf (first code-selection) (list char-x char-y)
                    (second code-selection) (list char-x char-y)))
             ((or (eq state :up))
-             (code-set-end-selection c char-x char-y)))
+	     (setf (first (second code-selection)) char-x
+		   (second (second code-selection)) char-y)))
       (setf (code-update? c) t))))
 
 (defmethod code-drag ((c code) x y)
@@ -161,7 +153,8 @@
             (max 0 (min c-y (1- (length code-strings)))))
            (char-x
             (max 0 (min c-x (length (aref code-strings char-y))))))
-      (code-set-end-selection c char-x char-y)
+      (setf (first (second code-selection)) char-x
+	    (second (second code-selection)) char-y)
       (setf (code-update? c) t))))
 
 (defmethod code-keyboard ((c code) key)
@@ -238,9 +231,16 @@
                   :rgba :unsigned-byte
                   *code-carret-pixels*))
 
+(defmethod normal-selection ((c code))
+  (with-slots ((c code-selection)) c
+    (if (and (> (second (first c)) (second (second c)))
+	     (> (first (first c)) (first (second c))))
+	(list (second c) (first c))
+	(list (first c) (second c)))))
+
 (defmethod draw-selection ((c code) row line gap)
   (destructuring-bind ((start-x start-y) (end-x end-y))
-      (code-selection c)
+      (normal-selection c)
     (if (not (= start-y end-y))
         (progn
           (loop for x from start-x to 64 do
