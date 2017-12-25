@@ -128,7 +128,7 @@
       (error (er) (code-answer c) er)))))
 
 (defmethod set-answer ((c code) answ)
-  (setf (code-answer c)	answ
+  (setf (code-answer c) answ
         (code-answer-shift c) (gap-by-pixels
                                c
                                (* (count #\Newline answ) 13)))
@@ -136,22 +136,22 @@
 
 (defmethod code-mouse ((c code) button state x y)
   (with-slots (code-strings
-	       code-carret-x code-carret-y
+               code-carret-x code-carret-y
                code-selection) c
     (let* ((c-x (floor (/ x 8)))
-	   (c-y (floor (/ y 13)))
-	   (char-y
-	    (max 0 (min c-y (1- (length code-strings)))))
-	   (char-x
-	    (max 0 (min c-x (length (aref code-strings char-y))))))
+           (c-y (floor (/ y 13)))
+           (char-y
+            (max 0 (min c-y (1- (length code-strings)))))
+           (char-x
+            (max 0 (min c-x (length (aref code-strings char-y))))))
       (setf code-carret-x char-x
-	    code-carret-y char-y)
+            code-carret-y char-y)
       (cond ((eq state :down)
              (setf (first code-selection) (list char-x char-y)
                    (second code-selection) (list char-x char-y)))
             ((or (eq state :up))
-	     (setf (first (second code-selection)) char-x
-		   (second (second code-selection)) char-y)))
+             (setf (first (second code-selection)) char-x
+                   (second (second code-selection)) char-y)))
       (setf (code-update? c) t))))
 
 (defmethod code-drag ((c code) x y)
@@ -163,7 +163,7 @@
            (char-x
             (max 0 (min c-x (length (aref code-strings char-y))))))
       (setf (first (second code-selection)) char-x
-	    (second (second code-selection)) char-y)
+            (second (second code-selection)) char-y)
       (setf (code-update? c) t))))
 
 (defmethod code-keyboard ((c code) key)
@@ -177,9 +177,9 @@
 
 (defmethod code-special ((c code) shift key)
   (with-slots (code-strings
-	       (x code-carret-x)
-	       (y code-carret-y)
-	       code-selection) c
+               (x code-carret-x)
+               (y code-carret-y)
+               code-selection) c
     (case key
       (:key-home
        (setf x 0))
@@ -194,12 +194,12 @@
        (setf x (min x (length (aref code-strings y)))))
       (:key-down
        (if (< y (1- (length code-strings)))
-	   (incf y)
-	   (setf x (length (aref code-strings y))))
+           (incf y)
+           (setf x (length (aref code-strings y))))
        (setf x (min x (length (aref code-strings y))))))
     (if shift
-	(setf (second code-selection) (list x y))
-	(setf code-selection `((,x ,y) (,x ,y))))
+        (setf (second code-selection) (list x y))
+        (setf code-selection `((,x ,y) (,x ,y))))
     (setf (code-update? c) t)))
 
 ;;
@@ -243,14 +243,14 @@
   (gl:draw-pixels *code-carret-width*
                   *code-carret-height*
                   :rgba :unsigned-byte
-		  *code-selection-pixels*))
+                  *code-selection-pixels*))
 
 (defmethod normal-selection ((c code))
   (with-slots ((c code-selection)) c
     (if (or (> (second (first c)) (second (second c)))
-	    (> (first (first c)) (first (second c))))
-	(list (second c) (first c))
-	(list (first c) (second c)))))
+            (> (first (first c)) (first (second c))))
+        (list (second c) (first c))
+        (list (first c) (second c)))))
 
 (defmethod draw-selection ((c code) row line gap)
   (destructuring-bind ((start-x start-y) (end-x end-y))
@@ -271,11 +271,11 @@
 (defmethod draw-carret ((c code) row line)
   (with-slots ((x code-carret-x) (y code-carret-y)) c
     (gl:raster-pos (+ row (gap-by-pixels c (* x 8)))
-		   (+ line (gap-by-pixels c (* y -13))))
+                   (+ line (gap-by-pixels c (* y -13))))
     (gl:draw-pixels *code-carret-width*
-		    *code-carret-height*
-		    :rgba :unsigned-byte
-		    *code-carret-pixels*)))
+                    *code-carret-height*
+                    :rgba :unsigned-byte
+                    *code-carret-pixels*)))
 
 (defmethod draw-chars ((c code) row line gap)
   (with-slots ((strs code-strings)
@@ -292,9 +292,9 @@
 
 (defmethod code-draw-buffer ((c code))
   (with-slots (code-strings
-	       (x code-carret-x)
-	       (y code-carret-y)
-	       code-selection) c
+               (x code-carret-x)
+               (y code-carret-y)
+               code-selection) c
     ;; setup
     (gl:bind-framebuffer-ext :framebuffer-ext (code-frame-buffer c))
     (gl:disable :blend :texture-2d)
@@ -317,7 +317,7 @@
           (line (- 1 (gap-by-pixels c 13)))
           (gap (gap-by-pixels c 13)))
       (if code-selection
-	  (draw-selection c row line gap))
+          (draw-selection c row line gap))
       (draw-carret c row line)
       (draw-chars c row line gap))))
 

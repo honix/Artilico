@@ -15,7 +15,7 @@
          :initform (make-instance 'code))
    ;; graphics
    (aspect-ratio :accessor aspect-ratio
-		 :initform 1.0))
+                 :initform 1.0))
   (:default-initargs :width 512 :height 512 :pos-x 100 :pos-y 100
                      :mode '(:double :depth :rgb :multisample)
                      :tick-interval 15 :title "artilico"))
@@ -50,12 +50,12 @@
       (mouse-drag nil))
   (defmethod glut:special ((w artilico-window) key x y)
     (cond ((eq key :key-left-ctrl) (setf ctrl t))
-	  ((eq key :key-left-shift) (setf shift t)))
+          ((eq key :key-left-shift) (setf shift t)))
     (code-special (code w) shift key))
-
+  
   (defmethod glut:special-up ((w artilico-window) key x y)
     (cond ((eq key :key-left-ctrl) (setf ctrl nil))
-	  ((eq key :key-left-shift) (setf shift nil))))
+          ((eq key :key-left-shift) (setf shift nil))))
 
   (defmethod glut:keyboard ((w artilico-window) key x y)
     (if (and ctrl (or (eq key #\Return) (eq key #\Newline)))
@@ -63,7 +63,7 @@
         (code-keyboard (code w) key)))
 
   (defmethod glut:mouse ((w artilico-window) button
-			 state x y)
+                         state x y)
     (setf mouse-drag (eq state :down))
     (code-mouse (code w) button state x y))
 
@@ -111,7 +111,7 @@
     (gl:frustum (- sized) sized (- norma) norma 0.1 100))
   (gl:matrix-mode :modelview))
 
-(defun draw ())		; user function
+(defun draw ())         ; user function
 
 (defun draw-graphics (w)
   (gl:enable :depth-test)
