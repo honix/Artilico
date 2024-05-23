@@ -6,7 +6,6 @@
   :license "cc nc"
   :serial t
   :depends-on (:swank
-               :trivial-timers
                :cl-opengl
                :cl-glut
                ;; :cl-glu
